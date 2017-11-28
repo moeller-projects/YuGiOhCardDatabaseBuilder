@@ -49,7 +49,7 @@ namespace YuGiOhCardDataCrawler
 
         private static void WriteBoostersToDatabase()
         {
-            using (var db = new LiteDatabase(@"Filename=C:\temp\ygo.db; Password=dev"))
+            using (var db = new LiteDatabase(@"Filename=ygo.db; Password=ygo"))
             {
                 var col = db.GetCollection<Models.Booster>("boosters");
                 col.Upsert(Boosters.Distinct());
@@ -61,7 +61,7 @@ namespace YuGiOhCardDataCrawler
 
         private static void WriteCardsToDatabase()
         {
-            using (var db = new LiteDatabase(@"Filename=C:\temp\ygo.db; Password=dev"))
+            using (var db = new LiteDatabase(@"Filename=ygo.db; Password=ygo"))
             {
                 var col = db.GetCollection<Models.Card>("cards");
                 col.Upsert(Cards.Distinct());

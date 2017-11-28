@@ -102,10 +102,14 @@ namespace YuGiOhCardDataCrawler
                     data = dataCollection.DefaultIfEmpty(null).First().InnerText.Trim();
                 }
 
-                if (data == null)
+                var spanrows = row.SelectNodes(".//*[contains(@class, 'cardtablespanrow')]");
+                if (spanrows != null)
                 {
-                    continue;
+                    HandleSpanRows(ref result, spanrows);
                 }
+
+                if (data == null)
+                    continue;
 
                 switch (headerText)
                 {
@@ -217,13 +221,6 @@ namespace YuGiOhCardDataCrawler
                         Debug.WriteLine("Attribute not found: " + headerText);
                         break;
                 }
-
-                var spanrows = row.SelectNodes(".//*[contains(@class, 'cardtablespanrow')]");
-                if (spanrows == null)
-                {
-                    continue;
-                }
-                HandleSpanRows(ref result, spanrows);
             }
         }
 
