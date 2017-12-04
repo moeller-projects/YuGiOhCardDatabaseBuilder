@@ -6,7 +6,7 @@ using System.Web;
 using HtmlAgilityPack;
 using YuGiOhWikiaApi.Models;
 
-namespace YuGiOhCardDataCrawler
+namespace YuGiOhCardDatabaseBuilder
 {
     public static class CardParser
     {

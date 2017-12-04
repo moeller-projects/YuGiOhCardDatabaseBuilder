@@ -1,9 +1,12 @@
 ﻿using LiteDB;
+using SQLite;
 
-namespace YuGiOhCardDataCrawler.Models
+namespace YuGiOhCardDatabaseBuilder.Models
 {
     public class Booster
     {
+        public Booster() { }
+
         public Booster(YuGiOhWikiaApi.Models.Booster booster)
         {
             Name = booster.name;
@@ -15,9 +18,11 @@ namespace YuGiOhCardDataCrawler.Models
         }
 
         [BsonId(true)]
+        [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
 
         [BsonField("name")]
+        [Indexed]
         public string Name { get; set; }
 
         [BsonField("release_date_english")]

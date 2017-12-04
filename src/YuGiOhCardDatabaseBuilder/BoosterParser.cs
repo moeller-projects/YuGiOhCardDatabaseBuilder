@@ -1,9 +1,9 @@
-﻿using HtmlAgilityPack;
-using System;
+﻿using System;
 using System.Linq;
+using HtmlAgilityPack;
 using YuGiOhWikiaApi.Models;
 
-namespace YuGiOhCardDataCrawler
+namespace YuGiOhCardDatabaseBuilder
 {
     public static class BoosterParser
     {

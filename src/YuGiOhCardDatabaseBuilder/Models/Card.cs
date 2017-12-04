@@ -1,9 +1,12 @@
 ﻿using LiteDB;
+using SQLite;
 
-namespace YuGiOhCardDataCrawler.Models
+namespace YuGiOhCardDatabaseBuilder.Models
 {
     public class Card
     {
+        public Card() { }
+
         public Card(YuGiOhWikiaApi.Models.Card card)
         {
             Passcode = card.passcode;
@@ -46,6 +49,7 @@ namespace YuGiOhCardDataCrawler.Models
         }
 
         [BsonId(true)]
+        [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
 
         [BsonField("name_english")]
@@ -74,7 +78,7 @@ namespace YuGiOhCardDataCrawler.Models
 
         [BsonField("description_english")]
         public string DescriptionEnglish { get; set; }
-        
+
         [BsonField("description_french")]
         public string DescriptionFrensh { get; set; }
 
@@ -103,6 +107,7 @@ namespace YuGiOhCardDataCrawler.Models
         public string Defense { get; set; }
 
         [BsonField("passcode")]
+        [Indexed]
         public string Passcode { get; set; }
 
         [BsonField("effect_types")]

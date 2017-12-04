@@ -7,13 +7,16 @@ using HtmlAgilityPack;
 using LiteDB;
 using Newtonsoft.Json.Linq;
 using NLog;
+using SQLite;
 using YuGiOhWikiaApi.Models;
 using Logger = NLog.Logger;
 
-namespace YuGiOhCardDataCrawler
+namespace YuGiOhCardDatabaseBuilder
 {
     public class Program
     {
+        private const string SqliteDbConnectionString = "ygodb.sqlite";
+        private static readonly string LiteDbConnectionString = Properties.Settings.Default.LiteDbConnectionString;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private static YuGiOhWikiaApi.YuGiOhWikiaApi _api;
         public static List<dynamic> CardList = new List<dynamic>();
@@ -27,6 +30,7 @@ namespace YuGiOhCardDataCrawler
             stopwatch.Start();
 
             _api = new YuGiOhWikiaApi.YuGiOhWikiaApi();
+            
             Logger.Info("initializing card list");
             InitializeCardLists();
             Logger.Info("initializing booster list");
@@ -49,7 +53,7 @@ namespace YuGiOhCardDataCrawler
 
         private static void WriteBoostersToDatabase()
         {
-            using (var db = new LiteDatabase(@"Filename=ygo.db; Password=ygo"))
+            using (var db = new LiteDatabase(LiteDbConnectionString))
             {
                 var col = db.GetCollection<Models.Booster>("boosters");
                 col.Upsert(Boosters.Distinct());
@@ -57,17 +61,29 @@ namespace YuGiOhCardDataCrawler
                 db.Shrink();
                 db.Dispose();
             }
+
+            using (var database = new SQLiteConnection(SqliteDbConnectionString))
+            {
+                database.CreateTable<Models.Booster>();
+                database.InsertAll(Boosters.Distinct());
+            }
         }
 
         private static void WriteCardsToDatabase()
         {
-            using (var db = new LiteDatabase(@"Filename=ygo.db; Password=ygo"))
+            using (var db = new LiteDatabase(LiteDbConnectionString))
             {
                 var col = db.GetCollection<Models.Card>("cards");
                 col.Upsert(Cards.Distinct());
                 col.EnsureIndex(i => i.Id, true);
                 db.Shrink();
                 db.Dispose();
+            }
+
+            using (var database = new SQLiteConnection(SqliteDbConnectionString))
+            {
+                database.CreateTable<Models.Card>();
+                database.InsertAll(Cards.Distinct());
             }
         }
 
