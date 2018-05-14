@@ -1,4 +1,6 @@
-﻿namespace YuGiOhWikiaApi.Models
+﻿using System.Collections.Generic;
+
+namespace YuGiOhWikiaApi.Models
 {
     public class Card
     {
@@ -20,12 +22,12 @@
         public string description_italian { get; set; }
         public string description_portuguese { get; set; }
         public string description_spanish { get; set; }
-        public string types { get; set; }
+        public List<string> types { get; set; }
         public string level { get; set; }
         public string atk { get; set; }
         public string def { get; set; }
         public string passcode { get; set; }
-        public string effectTypes { get; set; }
+        public List<string> effectTypes { get; set; }
         public string materials { get; set; }
         public string fusionMaterials { get; set; }
         public string rank { get; set; }
@@ -39,7 +41,7 @@
         public string synchroMaterial { get; set; }
         public string ritualMonster { get; set; }
         public string lore { get; set; }
-        public string archetype { get; set; }
+        public List<string> archetype { get; set; }
         public string ocgStatus { get; set; }
         public string tcgAdvStatus { get; set; }
         public string tcgTrnStatus { get; set; }

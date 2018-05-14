@@ -24,11 +24,11 @@ namespace YuGiOhCardDatabaseBuilder.Models
             DescriptionItalian = card.description_italian;
             DescriptionPortuguese = card.description_portuguese;
             DescriptionSpanish = card.description_spanish;
-            MonsterTypes = card.types;
+            MonsterTypes = card.types != null ? string.Join("|", card.types) : null;
             Level = card.level;
             Attack = card.atk;
             Defense = card.def;
-            EffectTypes = card.effectTypes;
+            EffectTypes = card.effectTypes != null ? string.Join("|", card.effectTypes) : null;
             Materials = card.materials;
             FusionMaterials = card.fusionMaterials;
             Rank = card.rank;
@@ -41,7 +41,7 @@ namespace YuGiOhCardDatabaseBuilder.Models
             LimitText = card.limitText;
             SynchroMaterial = card.synchroMaterial;
             RitualMonster = card.ritualMonster;
-            Archetype = card.archetype;
+            Archetype = card.archetype != null ? string.Join("|", card.archetype) : null;
             OcgStatus = card.ocgStatus;
             TcgAdvancedStatus = card.tcgAdvStatus;
             TcgTraditionalStatus = card.tcgTrnStatus;

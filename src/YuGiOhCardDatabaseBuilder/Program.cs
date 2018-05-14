@@ -1,36 +1,71 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using CommandLine;
 using HtmlAgilityPack;
-using LiteDB;
 using Newtonsoft.Json.Linq;
 using NLog;
 using SQLite;
-using YuGiOhWikiaApi.Models;
+using YuGiOhCardDatabaseBuilder.Models;
+using Booster = YuGiOhWikiaApi.Models.Booster;
+using BoosterCard = YuGiOhWikiaApi.Models.BoosterCard;
+using Card = YuGiOhWikiaApi.Models.Card;
 using Logger = NLog.Logger;
 
 namespace YuGiOhCardDatabaseBuilder
 {
     public class Program
     {
-        private const string SqliteDbConnectionString = "ygodb.sqlite";
-        private static readonly string LiteDbConnectionString = Properties.Settings.Default.LiteDbConnectionString;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private static YuGiOhWikiaApi.YuGiOhWikiaApi _api;
         public static List<dynamic> CardList = new List<dynamic>();
         public static List<dynamic> BoosterList = new List<dynamic>();
         public static List<Models.Card> Cards = new List<Models.Card>();
         public static List<Models.Booster> Boosters = new List<Models.Booster>();
+        public static List<Models.BoosterCard> BoosterCards = new List<Models.BoosterCard>();
 
         public static void Main(string[] args)
         {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
+            var timer = new Stopwatch();
+            timer.Start();
+            try
+            {
+                Parser.Default.ParseArguments<BuildArguments>(args)
+                    .WithParsed(Build)
+                    .WithNotParsed(Errors);
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+                timer.Stop();
+                Logger.Info($"Time elapsed: {timer.Elapsed.ToOutput()}\n");
+                Environment.Exit(1);
+            }
+            timer.Stop();
+            Logger.Info("-- FINISHED --");
+            Logger.Info($"Time elapsed: {timer.Elapsed.ToOutput()}\n");
 
+#if DEBUG
+            Console.ReadLine();
+#endif
+        }
+
+        private static void Errors(IEnumerable<Error> errors)
+        {
+            foreach (var error in errors)
+            {
+                Logger.Error(error);
+            }
+            Environment.Exit(1);
+        }
+
+        public static void Build(BuildArguments arguments)
+        {
             _api = new YuGiOhWikiaApi.YuGiOhWikiaApi();
-            
+
             Logger.Info("initializing card list");
             InitializeCardLists();
             Logger.Info("initializing booster list");
@@ -41,46 +76,37 @@ namespace YuGiOhCardDatabaseBuilder
                 Task.Factory.StartNew(ProcessBoosters));
 
             Logger.Info("writing cards into database");
-            WriteCardsToDatabase();
+            WriteCardsToDatabase(
+                Path.Combine(arguments.DatabasePath, arguments.DatabaseName));
             Logger.Info("writing booster into database");
-            WriteBoostersToDatabase();
-
-            stopwatch.Stop();
-            Logger.Info("-- FINISHED --");
-            Logger.Info($"time elapsed: {stopwatch.Elapsed.TotalMinutes} minutes");
-            Console.ReadLine();
+            WriteBoostersToDatabase(
+                Path.Combine(arguments.DatabasePath, arguments.DatabaseName));
+            Logger.Info("writing boostercards into database");
+            WriteBoosterCardsToDatabase(
+                Path.Combine(arguments.DatabasePath, arguments.DatabaseName));
         }
 
-        private static void WriteBoostersToDatabase()
+        private static void WriteBoosterCardsToDatabase(string sqliteDbConnectionString)
         {
-            using (var db = new LiteDatabase(LiteDbConnectionString))
+            using (var database = new SQLiteConnection(sqliteDbConnectionString))
             {
-                var col = db.GetCollection<Models.Booster>("boosters");
-                col.Upsert(Boosters.Distinct());
-                col.EnsureIndex(i => i.Id, true);
-                db.Shrink();
-                db.Dispose();
+                database.CreateTable<Models.BoosterCard>();
+                database.InsertAll(BoosterCards.Distinct());
             }
+        }
 
-            using (var database = new SQLiteConnection(SqliteDbConnectionString))
+        private static void WriteBoostersToDatabase(string sqliteDbConnectionString)
+        {
+            using (var database = new SQLiteConnection(sqliteDbConnectionString))
             {
                 database.CreateTable<Models.Booster>();
                 database.InsertAll(Boosters.Distinct());
             }
         }
 
-        private static void WriteCardsToDatabase()
+        private static void WriteCardsToDatabase(string sqliteDbConnectionString)
         {
-            using (var db = new LiteDatabase(LiteDbConnectionString))
-            {
-                var col = db.GetCollection<Models.Card>("cards");
-                col.Upsert(Cards.Distinct());
-                col.EnsureIndex(i => i.Id, true);
-                db.Shrink();
-                db.Dispose();
-            }
-
-            using (var database = new SQLiteConnection(SqliteDbConnectionString))
+            using (var database = new SQLiteConnection(sqliteDbConnectionString))
             {
                 database.CreateTable<Models.Card>();
                 database.InsertAll(Cards.Distinct());
@@ -111,6 +137,7 @@ namespace YuGiOhCardDatabaseBuilder
                 HtmlDocument booster = _api.GetBoosterInfo(boosterInfo.url.ToString());
                 Booster result = BoosterParser.ForHtmlDocument(boosterInfo, booster);
                 Boosters.Add(new Models.Booster(result));
+                BoosterCards.AddRange(result.cardList.Select(s => new Models.BoosterCard(s)));
                 UpdateProgress();
             }
         }
@@ -153,13 +180,13 @@ namespace YuGiOhCardDatabaseBuilder
         private static void InitializeCardLists()
         {
             AddTcgCardsToList(null);
-            AddOcgCardsToList(null);
+            //AddOcgCardsToList(null);
         }
 
         private static void InitializeBoosterList()
         {
             AddTcgBoosterToList(null);
-            AddOcgBoosterToList(null);
+            //AddOcgBoosterToList(null);
         }
 
         private static void AddTcgBoosterToList(string offset)

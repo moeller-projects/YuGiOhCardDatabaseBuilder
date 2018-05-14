@@ -72,7 +72,7 @@ namespace YuGiOhCardDatabaseBuilder
 
                     var archetypes = dl.SelectNodes(".//dd");
 
-                    result.archetype = string.Join(", ", archetypes.Select(type => HttpUtility.HtmlDecode(type.InnerText)?.Trim()));
+                    result.archetype = archetypes.Select(type => HttpUtility.HtmlDecode(type.InnerText)?.Trim()).ToList();
                 }
             }
 
@@ -121,8 +121,8 @@ namespace YuGiOhCardDatabaseBuilder
                     case "Spanish": result.name_spanish = HttpUtility.HtmlDecode(data); break;
                     case "Attribute": result.attribute = data; break; // EARTH
                     case "Card type": result.cardType = data; break; // Spell, Monster
-                    case "Types": result.types = data; break; // Token, Fairy / Effect
-                    case "Type": result.types = data; break; // Fiend
+                    case "Types": result.types = data.Split('/').Select(s => s.Trim()).ToList(); break; // Token, Fairy / Effect
+                    case "Type": result.types = data.Split('/').Select(s => s.Trim()).ToList(); break; // Fiend
                     case "Level": result.level = data; break; // 6
                     case "ATK / DEF":
                         {                              // 2500 / 2000
@@ -137,7 +137,7 @@ namespace YuGiOhCardDatabaseBuilder
                             break;
                         }
                     case "Passcode": result.passcode = data; break; // 64163367
-                    case "Card effect types": result.effectTypes = data; break; // Continuous-like, Trigger-like
+                    case "Card effect types": result.effectTypes = data.Split(new[] { "\r\n", "\r", "\n" },StringSplitOptions.None).Select(s => s.Trim()).ToList(); break; // Continuous-like, Trigger-like
                     case "Materials": result.materials = data; break; // "Genex Controller" + 1 or more non-Tuner WATER monsters
                     case "Fusion Material": result.fusionMaterials = data; break; // "Blue-Eyes White Dragon"
                     case "Rank": result.rank = data; break; // 4
