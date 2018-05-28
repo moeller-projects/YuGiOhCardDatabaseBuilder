@@ -90,7 +90,7 @@ namespace YuGiOhCardDatabaseBuilder
         {
             using (var database = new SQLiteConnection(sqliteDbConnectionString))
             {
-                database.CreateTable<Models.BoosterCard>();
+                database.CreateTable<Models.BoosterCard>(CreateFlags.FullTextSearch4);
                 database.InsertAll(BoosterCards.Distinct());
             }
         }
@@ -99,7 +99,7 @@ namespace YuGiOhCardDatabaseBuilder
         {
             using (var database = new SQLiteConnection(sqliteDbConnectionString))
             {
-                database.CreateTable<Models.Booster>();
+                database.CreateTable<Models.Booster>(CreateFlags.FullTextSearch4);
                 database.InsertAll(Boosters.Distinct());
             }
         }
@@ -108,7 +108,7 @@ namespace YuGiOhCardDatabaseBuilder
         {
             using (var database = new SQLiteConnection(sqliteDbConnectionString))
             {
-                database.CreateTable<Models.Card>();
+                database.CreateTable<Models.Card>(CreateFlags.FullTextSearch4);
                 database.InsertAll(Cards.Distinct());
             }
         }
@@ -153,7 +153,11 @@ namespace YuGiOhCardDatabaseBuilder
         {
             Logger.Info($"processing {CardList.Count} cards");
 
-            var cardlists = SplitList(CardList.Distinct().ToList(), 1000);
+            var cardlists = SplitList(CardList.Distinct()
+#if DEBUG
+                .Take(100)
+#endif
+                .ToList(), 1000);
 
             var tasks = cardlists
                 .Select(cards => Task.Factory.StartNew(() => ProcessCards(cards)))

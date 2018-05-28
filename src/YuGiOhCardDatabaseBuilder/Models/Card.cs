@@ -48,10 +48,6 @@ namespace YuGiOhCardDatabaseBuilder.Models
             ImageUrl = card.img;
         }
 
-        [BsonId(true)]
-        [PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
-
         [BsonField("name_english")]
         public string NameEnglish { get; set; }
 
@@ -107,7 +103,6 @@ namespace YuGiOhCardDatabaseBuilder.Models
         public string Defense { get; set; }
 
         [BsonField("passcode")]
-        [Indexed]
         public string Passcode { get; set; }
 
         [BsonField("effect_types")]

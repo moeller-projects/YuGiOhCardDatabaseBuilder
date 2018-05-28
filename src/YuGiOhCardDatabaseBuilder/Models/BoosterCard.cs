@@ -14,15 +14,10 @@ namespace YuGiOhCardDatabaseBuilder.Models
             Category = boosterCard.category;
         }
         
-        [BsonId(true)]
-        [PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
-
         [BsonField("language")]
         public string Language { get; set; }
 
         [BsonField("setnumber")]
-        [Indexed]
         public string SetNumber { get; set; }
 
         [BsonField("name")]

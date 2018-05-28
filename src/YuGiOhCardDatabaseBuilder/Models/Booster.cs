@@ -19,12 +19,7 @@ namespace YuGiOhCardDatabaseBuilder.Models
             Prefix = booster.prefix;
         }
 
-        [BsonId(true)]
-        [PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
-
         [BsonField("name")]
-        [Indexed]
         public string Name { get; set; }
 
         [BsonField("release_date_english")]
