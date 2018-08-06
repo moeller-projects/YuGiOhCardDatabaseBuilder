@@ -5,13 +5,13 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CommandLine;
+using DuelLinksMeta;
 using HtmlAgilityPack;
 using Newtonsoft.Json.Linq;
 using NLog;
 using SQLite;
 using YuGiOhCardDatabaseBuilder.Models;
 using Booster = YuGiOhWikiaApi.Models.Booster;
-using BoosterCard = YuGiOhWikiaApi.Models.BoosterCard;
 using Card = YuGiOhWikiaApi.Models.Card;
 using Logger = NLog.Logger;
 
@@ -21,8 +21,10 @@ namespace YuGiOhCardDatabaseBuilder
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private static YuGiOhWikiaApi.YuGiOhWikiaApi _api;
+        private static DuelLinksMetaApi _duelLinksMetaApi;
         public static List<dynamic> CardList = new List<dynamic>();
         public static List<dynamic> BoosterList = new List<dynamic>();
+        public static List<DuelLinksMeta.Models.Skill> Skills = new List<DuelLinksMeta.Models.Skill>();
         public static List<Models.Card> Cards = new List<Models.Card>();
         public static List<Models.Booster> Boosters = new List<Models.Booster>();
         public static List<Models.BoosterCard> BoosterCards = new List<Models.BoosterCard>();
@@ -65,6 +67,13 @@ namespace YuGiOhCardDatabaseBuilder
         public static void Build(BuildArguments arguments)
         {
             _api = new YuGiOhWikiaApi.YuGiOhWikiaApi();
+            _duelLinksMetaApi = new DuelLinksMetaApi();
+
+            Logger.Info("initializing skill list");
+            InitializeSkillList();
+            Logger.Info("writing skills into database");
+            WriteSkillsToDatabase(
+                Path.Combine(arguments.DatabasePath, arguments.DatabaseName));
 
             Logger.Info("initializing card list");
             InitializeCardLists();
@@ -84,6 +93,20 @@ namespace YuGiOhCardDatabaseBuilder
             Logger.Info("writing boostercards into database");
             WriteBoosterCardsToDatabase(
                 Path.Combine(arguments.DatabasePath, arguments.DatabaseName));
+        }
+
+        private static void InitializeSkillList()
+        {
+            Skills.AddRange(_duelLinksMetaApi.GetAllSkills());
+        }
+
+        private static void WriteSkillsToDatabase(string sqliteDbConnectionString)
+        {
+            using (var database = new SQLiteConnection(sqliteDbConnectionString))
+            {
+                database.CreateTable<Models.Skill>();
+                database.InsertAll(Skills.Select(s => new Models.Skill(s)));
+            }
         }
 
         private static void WriteBoosterCardsToDatabase(string sqliteDbConnectionString)
