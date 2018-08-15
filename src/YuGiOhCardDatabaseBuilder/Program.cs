@@ -113,7 +113,7 @@ namespace YuGiOhCardDatabaseBuilder
         {
             using (var database = new SQLiteConnection(sqliteDbConnectionString))
             {
-                database.CreateTable<Models.BoosterCard>(CreateFlags.FullTextSearch4);
+                database.CreateTable<Models.BoosterCard>();
                 database.InsertAll(BoosterCards.Distinct());
             }
         }
@@ -122,7 +122,7 @@ namespace YuGiOhCardDatabaseBuilder
         {
             using (var database = new SQLiteConnection(sqliteDbConnectionString))
             {
-                database.CreateTable<Models.Booster>(CreateFlags.FullTextSearch4);
+                database.CreateTable<Models.Booster>();
                 database.InsertAll(Boosters.Distinct());
             }
         }
@@ -131,7 +131,7 @@ namespace YuGiOhCardDatabaseBuilder
         {
             using (var database = new SQLiteConnection(sqliteDbConnectionString))
             {
-                database.CreateTable<Models.Card>(CreateFlags.FullTextSearch4);
+                database.CreateTable<Models.Card>();
                 database.InsertAll(Cards.Distinct());
             }
         }

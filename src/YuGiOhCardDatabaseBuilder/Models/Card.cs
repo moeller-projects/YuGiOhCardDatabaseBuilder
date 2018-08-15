@@ -48,6 +48,10 @@ namespace YuGiOhCardDatabaseBuilder.Models
             ImageUrl = card.img;
         }
 
+        [BsonId(true)]
+        [PrimaryKey, AutoIncrement]
+        public int Id { get; set; }
+
         [BsonField("name_english")]
         public string NameEnglish { get; set; }
 
