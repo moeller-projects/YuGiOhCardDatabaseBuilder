@@ -4,33 +4,47 @@ using System;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using YuGiOhCardDatabaseBuilder.Models;
+using YuGiOhDatabaseBuilderV2.Reporter;
 
 namespace YuGiOhDatabaseBuilderV2.Parser
 {
     public class MediaWikiParser : IParser<Card>
     {
         private readonly IHtmlParser htmlParser;
+        private readonly MissingFieldReporter missingFieldReporter;
 
-        public MediaWikiParser(IHtmlParser htmlParser)
+        public MediaWikiParser(IHtmlParser htmlParser, MissingFieldReporter missingFieldReporter)
         {
             this.htmlParser = htmlParser;
+            this.missingFieldReporter = missingFieldReporter;
         }
 
         public async Task<Card> ParseAsync(string html)
         {
             var card = new Card();
 
-            var dom = (await htmlParser.ParseDocumentAsync(html))
+            try
+            {
+                var dom = (await htmlParser.ParseDocumentAsync(html))
                 .GetElementsByClassName("mw-parser-output")
                 .FirstOrDefault();
 
-            await ParseBasics(dom, ref card);
-            await ParseCardTable(dom, ref card);
-            await ParseHList(dom, ref card);
-            await ParseWikitable(dom, ref card);
+                await ParseBasics(dom, ref card);
+                await ParseCardTable(dom, ref card);
+                await ParseHList(dom, ref card);
+                await ParseWikitable(dom, ref card);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+            finally
+            {
 
+            }
             return card;
         }
 
@@ -49,6 +63,12 @@ namespace YuGiOhDatabaseBuilderV2.Parser
                     case "Supports":
                         card.Supports = value;
                         break;
+                    case "Anti-supports":
+                        card.AntiSupports = value;
+                        break;
+                    case "Anti-supports archetypes":
+                        card.AntiSupportsArchetypes = value;
+                        break;
                     case "Archetypes and series":
                         card.ArchetypesAndSeries = value;
                         break;
@@ -58,7 +78,7 @@ namespace YuGiOhDatabaseBuilderV2.Parser
                     case "Related to archetypes and series":
                         card.RelatedToArchetypeAndSeries = value;
                         break;
-                    case "Monster / Spell / Trap categories":
+                    case "Monster/Spell/Trap categories":
                         card.CardCategories = value;
                         break;
                     case "Summoning categories":
@@ -76,8 +96,28 @@ namespace YuGiOhDatabaseBuilderV2.Parser
                     case "Actions":
                         card.Actions = value;
                         break;
+                    case "Attack categories":
+                        card.AttackCategories = value;
+                        break;
+                    case "Fusion Material for":
+                        card.FusionMaterialFor = value;
+                        break;
+                    case "LP":
+                        card.LpCategories = value;
+                        break;
+                    case "Stat changes":
+                        card.StatChanges = value;
+                        break;
+                    case "Physical":
+                        card.Physical = value;
+                        break;
+                    case "Synchro Material for":
+                        card.SynchroMaterialFor = value;
+                        break;
+                    case "":
+                        break;
                     default:
-                        Console.WriteLine($"Missing Hlist Categorie \"{header}\": \"{value}\"");
+                        missingFieldReporter.OnNext(new Models.MissingField("Hlist", header));
                         break;
                 }
             }
@@ -90,14 +130,20 @@ namespace YuGiOhDatabaseBuilderV2.Parser
             var otherLanguages = dom.GetElementsByTagName("h2")
                 .FirstOrDefault(f => f.TextContent.ToLower().Trim() == "other languages");
 
-            var t = otherLanguages.NextElementSibling;
-            var rows = t.GetElementsByTagName("tr");
+            var wikitable = otherLanguages?.NextElementSibling;
+            var rows = wikitable?.GetElementsByTagName("tr");
+
+            if (rows == null)
+                return Task.CompletedTask;
 
             foreach (var row in rows)
             {
                 var language = row.GetElementsByTagName("th").FirstOrDefault()?.TextContent.Replace("\n", " ").Trim();
                 var name = row.GetElementsByTagName("td").FirstOrDefault()?.TextContent.Trim();
-                var description = row.GetElementsByTagName("td").Skip(1).FirstOrDefault()?.TextContent.Trim();
+                //var description = row.GetElementsByTagName("td").Skip(1).FirstOrDefault()?.TextContent.Trim();
+
+                var descriptionFormatted = Regex.Replace(row.GetElementsByTagName("td").Skip(1).FirstOrDefault()?.InnerHtml.Replace("<br>", Environment.NewLine) ?? string.Empty, "<[^>]*>", "").Trim();
+                var description = WebUtility.HtmlDecode(descriptionFormatted);
 
                 switch (language)
                 {
@@ -121,8 +167,10 @@ namespace YuGiOhDatabaseBuilderV2.Parser
                         card.NameSpanish = name;
                         card.DescriptionSpanish = description;
                         break;
+                    case "":
+                        break;
                     default:
-                        Console.WriteLine($"Missing Wikitable Language {language}");
+                        missingFieldReporter.OnNext(new Models.MissingField("Wikirable", language));
                         break;
                 }
             }
@@ -160,6 +208,9 @@ namespace YuGiOhDatabaseBuilderV2.Parser
                         case "Card type":
                             card.CardType = data;
                             break;
+                        case "Card effect types":
+                            card.EffectTypes = data;
+                            break;
                         case "Attribute":
                             card.Attribute = data;
                             break;
@@ -178,6 +229,9 @@ namespace YuGiOhDatabaseBuilderV2.Parser
                             break;
                         case "Materials":
                             card.Materials = data;
+                            break;
+                        case "Fusion Material":
+                            card.FusionMaterials = data;
                             break;
                         case "ATK / DEF":
                             var array = data.Split(new string[] { " / " }, StringSplitOptions.None);
@@ -207,9 +261,35 @@ namespace YuGiOhDatabaseBuilderV2.Parser
                         case "Passcode":
                             card.Passcode = data.TrimStart('0');
                             break;
+                        case "Limitation text":
+                            card.LimitText = data;
+                            break;
+                        case "Other names":
+                            card.OtherNames = data;
+                            break;
+                        case "Password":
+                            card.Password = data;
+                            break;
+                        case "Ritual Monster required":
+                            card.RitualMonsterRequired = data;
+                            break;
+                        case "Ritual Spell Card required":
+                            card.RitualSpellCardRequired = data;
+                            break;
+                        case "Source card":
+                            card.SourceCard = data;
+                            break;
+                        case "Summoned by the effect of":
+                            card.SummonedByTheEffectOf = data;
+                            break;
+                        case "Synchro Material":
+                            card.SynchroMaterial = data;
+                            break;
                         case "Statuses":
+                        case "":
+                            break;
                         default:
-                            Console.WriteLine($"Missing CardTable Categorie {header}");
+                            missingFieldReporter.OnNext(new Models.MissingField("Cardtable", header));
                             break;
 
                     }

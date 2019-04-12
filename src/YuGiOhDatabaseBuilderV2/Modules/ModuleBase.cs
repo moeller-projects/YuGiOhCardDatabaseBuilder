@@ -28,7 +28,7 @@ namespace YuGiOhDatabaseBuilderV2.Modules
 
         }
 
-        protected abstract Task<IEnumerable<(string name, int pageId)>> GetCardUrlsAsync();
-        protected abstract Task<IEnumerable<Card>> ParseCardsAsync(IEnumerable<(string name, int pageId)> cardNames);
+        protected abstract Task<IDictionary<int, string>> GetCardUrlsAsync();
+        protected abstract Task<IEnumerable<Card>> ParseCardsAsync(IDictionary<int, string> cardNames);
     }
 }

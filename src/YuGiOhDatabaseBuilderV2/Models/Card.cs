@@ -6,47 +6,6 @@ namespace YuGiOhCardDatabaseBuilder.Models
     {
         public Card() { }
 
-        //public Card(Card card)
-        //{
-        //    Passcode = card.passcode;
-        //    NameEnglish = card.name_english;
-        //    NameFrench = card.name_french;
-        //    NameGerman = card.name_german;
-        //    NameItalian = card.name_italian;
-        //    NamePortuguese = card.name_portuguese;
-        //    NameSpanish = card.name_spanish;
-        //    Attribute = card.attribute;
-        //    CardType = card.cardType;
-        //    DescriptionEnglish = card.description_english;
-        //    DescriptionFrensh = card.description_french;
-        //    DescriptionGerman = card.description_german;
-        //    DescriptionItalian = card.description_italian;
-        //    DescriptionPortuguese = card.description_portuguese;
-        //    DescriptionSpanish = card.description_spanish;
-        //    MonsterTypes = card.types != null ? string.Join("|", card.types) : null;
-        //    Level = card.level;
-        //    Attack = card.atk;
-        //    Defense = card.def;
-        //    EffectTypes = card.effectTypes != null ? string.Join("|", card.effectTypes) : null;
-        //    Materials = card.materials;
-        //    FusionMaterials = card.fusionMaterials;
-        //    Rank = card.rank;
-        //    RitualSpell = card.ritualSpell;
-        //    PendulumScale = card.pendulumScale;
-        //    LinkMarkers = card.linkMarkers;
-        //    Link = card.link;
-        //    Property = card.property;
-        //    SummonedBy = card.summonedBy;
-        //    LimitText = card.limitText;
-        //    SynchroMaterial = card.synchroMaterial;
-        //    RitualMonster = card.ritualMonster;
-        //    Archetype = card.archetype != null ? string.Join("|", card.archetype) : null;
-        //    OcgStatus = card.ocgStatus;
-        //    TcgAdvancedStatus = card.tcgAdvStatus;
-        //    TcgTraditionalStatus = card.tcgTrnStatus;
-        //    ImageUrl = card.img;
-        //}
-
         [BsonId(true)]
         public int Id { get; set; }
 
@@ -160,15 +119,53 @@ namespace YuGiOhCardDatabaseBuilder.Models
 
         [BsonField("image_url")]
         public string ImageUrl { get; set; }
+        [BsonField("supports")]
         public string Supports { get; internal set; }
+        [BsonField("archetypes_and_series")]
         public string ArchetypesAndSeries { get; internal set; }
+        [BsonField("supports_archetypes")]
         public string SupportsArchetypes { get; internal set; }
+        [BsonField("related_to_archetype_and_series")]
         public string RelatedToArchetypeAndSeries { get; internal set; }
+        [BsonField("card_categorie")]
         public string CardCategories { get; internal set; }
+        [BsonField("summoning_categories")]
         public string SummoningCategories { get; internal set; }
+        [BsonField("miscellaneous")]
         public string Miscellaneous { get; internal set; }
+        [BsonField("counter")]
         public string Counters { get; internal set; }
+        [BsonField("actions")]
         public string Actions { get; internal set; }
+        [BsonField("banished_categories")]
         public string BanishedCategories { get; internal set; }
+        [BsonField("anti_supports")]
+        public string AntiSupports { get; internal set; }
+        [BsonField("attack_categories")]
+        public string AttackCategories { get; internal set; }
+        [BsonField("lp_categories")]
+        public string LpCategories { get; internal set; }
+        [BsonField("stat_changes")]
+        public string StatChanges { get; internal set; }
+        [BsonField("fusion_material_for")]
+        public string FusionMaterialFor { get; internal set; }
+        [BsonField("anti_supports_archetypes")]
+        public string AntiSupportsArchetypes { get; internal set; }
+        [BsonField("physical")]
+        public string Physical { get; internal set; }
+        [BsonField("synchron_material_for")]
+        public string SynchroMaterialFor { get; internal set; }
+        [BsonField("other_names")]
+        public string OtherNames { get; internal set; }
+        [BsonField("password")]
+        public string Password { get; internal set; }
+        [BsonField("witual_monster_required")]
+        public string RitualMonsterRequired { get; internal set; }
+        [BsonField("ritual_spell_card_requires")]
+        public string RitualSpellCardRequired { get; internal set; }
+        [BsonField("source_card")]
+        public string SourceCard { get; internal set; }
+        [BsonField("sommoned_by_the_effect_of")]
+        public string SummonedByTheEffectOf { get; internal set; }
     }
 }

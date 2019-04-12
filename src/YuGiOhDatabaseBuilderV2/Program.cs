@@ -1,13 +1,17 @@
 ﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using JsonFlatFileDataStore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using SQLite;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using YuGiOhCardDatabaseBuilder.Models;
 using YuGiOhDatabaseBuilderV2.Modules;
 
 namespace YuGiOhDatabaseBuilderV2
@@ -24,16 +28,36 @@ namespace YuGiOhDatabaseBuilderV2
 
             var services = ConfigureServices();
 
-            var modules = Assembly.GetEntryAssembly().GetTypes()
-                .Where(type => type.CustomAttributes.Any(attribute => attribute.AttributeType == typeof(ModuleAttribute)));
+            var cards = new List<Card>();
 
-            foreach (var moduleType in modules)
+            var modules = Assembly.GetEntryAssembly().GetTypes()
+                .Where(type => type.CustomAttributes.Any(attribute => attribute.AttributeType == typeof(ModuleAttribute)))
+                .Select(moduleType => Task.Run(async () =>
+                {
+                    var module = Activator.CreateInstance(moduleType) as ModuleBase;
+                    var moduleInfo = await module.RunAsync();
+                    cards.AddRange(moduleInfo.Cards);
+                }))
+                .ToArray();
+
+            Task.WaitAll(modules);
+
+            await CreateDatabaseAsync(cards);
+        }
+
+        private async Task CreateDatabaseAsync(IEnumerable<Card> cards)
+        {
+            var sqliteConnection = Path.Combine("C:\\Temp\\temp.db");
+            using (var database = new SQLiteConnection(sqliteConnection))
             {
-                var module = Activator.CreateInstance(moduleType) as ModuleBase;
-                var moduleInfo = await module.RunAsync();
+                database.CreateTable<Card>();
+                database.InsertAll(cards.Distinct());
             }
 
-            await Task.Delay(-1);
+            using (var store = new DataStore("C:\\Temp\\temp.json", true, "id"))
+            {
+                await store.GetCollection<Card>().InsertManyAsync(cards);
+            }
         }
 
         private IServiceProvider ConfigureServices()
