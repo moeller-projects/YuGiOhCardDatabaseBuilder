@@ -56,64 +56,65 @@ namespace YuGiOhDatabaseBuilderV2.Parser
             foreach (var hlist in hlists)
             {
                 var header = hlist.GetElementsByTagName("dt").FirstOrDefault()?.TextContent.Replace("\n", " ").Trim();
-                var value = string.Join("/", hlist.GetElementsByTagName("dd").Select(s => s.TextContent.Trim()));
+                var value = string.Join("|", hlist.GetElementsByTagName("dd").Select(s => s.TextContent.Trim()));
 
-                switch (header)
+                switch (header?.ToLower())
                 {
-                    case "Supports":
+                    case "supports":
                         card.Supports = value;
                         break;
-                    case "Anti-supports":
+                    case "anti-supports":
                         card.AntiSupports = value;
                         break;
-                    case "Anti-supports archetypes":
+                    case "anti-supports archetypes":
                         card.AntiSupportsArchetypes = value;
                         break;
-                    case "Archetypes and series":
+                    case "archetypes and series":
                         card.ArchetypesAndSeries = value;
                         break;
-                    case "Supports archetypes":
+                    case "supports archetypes":
                         card.SupportsArchetypes = value;
                         break;
-                    case "Related to archetypes and series":
+                    case "related to archetypes and series":
                         card.RelatedToArchetypeAndSeries = value;
                         break;
-                    case "Monster/Spell/Trap categories":
+                    case "monster/spell/trap categories":
                         card.CardCategories = value;
                         break;
-                    case "Summoning categories":
+                    case "summoning categories":
                         card.SummoningCategories = value;
                         break;
-                    case "Miscellaneous":
+                    case "miscellaneous":
                         card.Miscellaneous = value;
                         break;
-                    case "Counters":
+                    case "counters":
                         card.Counters = value;
                         break;
-                    case "Banished categories":
+                    case "banished categories":
                         card.BanishedCategories = value;
                         break;
-                    case "Actions":
+                    case "actions":
                         card.Actions = value;
                         break;
-                    case "Attack categories":
+                    case "attack categories":
                         card.AttackCategories = value;
                         break;
-                    case "Fusion Material for":
+                    case "fusion material for":
                         card.FusionMaterialFor = value;
                         break;
-                    case "LP":
+                    case "lp":
                         card.LpCategories = value;
                         break;
-                    case "Stat changes":
+                    case "stat changes":
                         card.StatChanges = value;
                         break;
-                    case "Physical":
+                    case "physical":
                         card.Physical = value;
                         break;
-                    case "Synchro Material for":
+                    case "synchro material for":
                         card.SynchroMaterialFor = value;
                         break;
+                    case null:
                     case "":
                         break;
                     default:
@@ -145,32 +146,33 @@ namespace YuGiOhDatabaseBuilderV2.Parser
                 var descriptionFormatted = Regex.Replace(row.GetElementsByTagName("td").Skip(1).FirstOrDefault()?.InnerHtml.Replace("<br>", Environment.NewLine) ?? string.Empty, "<[^>]*>", "").Trim();
                 var description = WebUtility.HtmlDecode(descriptionFormatted);
 
-                switch (language)
+                switch (language?.ToLower())
                 {
-                    case "French":
+                    case "french":
                         card.NameFrench = name;
                         card.DescriptionFrensh = description;
                         break;
-                    case "German":
+                    case "german":
                         card.NameGerman = name;
                         card.DescriptionGerman = description;
                         break;
-                    case "Italian":
+                    case "italian":
                         card.NameItalian = name;
                         card.DescriptionItalian = description;
                         break;
-                    case "Portuguese":
+                    case "portuguese":
                         card.NamePortuguese = name;
                         card.DescriptionPortuguese = description;
                         break;
-                    case "Spanish":
+                    case "spanish":
                         card.NameSpanish = name;
                         card.DescriptionSpanish = description;
                         break;
                     case "":
+                    case null:
                         break;
                     default:
-                        missingFieldReporter.OnNext(new Models.MissingField("Wikirable", language));
+                        missingFieldReporter.OnNext(new Models.MissingField("Wikitable", language));
                         break;
                 }
             }
@@ -202,44 +204,44 @@ namespace YuGiOhDatabaseBuilderV2.Parser
                     var header = row.GetElementsByClassName("cardtablerowheader").FirstOrDefault()?.TextContent;
                     var data = row.GetElementsByClassName("cardtablerowdata").FirstOrDefault()?.TextContent?.Replace("\n", " ").Trim();
 
-                    switch (header)
+                    switch (header?.ToLower())
                     {
 
-                        case "Card type":
+                        case "card type":
                             card.CardType = data;
                             break;
-                        case "Card effect types":
+                        case "card effect types":
                             card.EffectTypes = data;
                             break;
-                        case "Attribute":
+                        case "attribute":
                             card.Attribute = data;
                             break;
-                        case "Types":
-                        case "Type":
-                            card.MonsterTypes = data;
+                        case "types":
+                        case "type":
+                            card.MonsterTypes = string.Join('|', data.Split(" / ", StringSplitOptions.RemoveEmptyEntries));
                             break;
-                        case "Level":
+                        case "level":
                             card.Level = data;
                             break;
-                        case "Rank":
+                        case "rank":
                             card.Rank = data;
                             break;
-                        case "Pendulum Scale":
+                        case "pendulum scale":
                             card.PendulumScale = data;
                             break;
-                        case "Materials":
+                        case "materials":
                             card.Materials = data;
                             break;
-                        case "Fusion Material":
+                        case "fusion material":
                             card.FusionMaterials = data;
                             break;
-                        case "ATK / DEF":
-                            var array = data.Split(new string[] { " / " }, StringSplitOptions.None);
+                        case "atk / def":
+                            var array = data.Split(new string[] { " / " }, StringSplitOptions.RemoveEmptyEntries);
                             card.Attack = array[0];
                             card.Defense = array[1];
                             break;
-                        case "ATK / LINK":
-                            array = data.Split(new string[] { " / " }, StringSplitOptions.None);
+                        case "atk / link":
+                            array = data.Split(new string[] { " / " }, StringSplitOptions.RemoveEmptyEntries);
 
                             if (array.Length == 2)
                             {
@@ -252,40 +254,38 @@ namespace YuGiOhDatabaseBuilderV2.Parser
                                 card.Level = array[0];
 
                             break;
-                        case "Property":
+                        case "property":
                             card.Property = data;
                             break;
-                        case "Link Arrows":
-                            card.LinkMarkers = data.Replace(" , ", ", ");
+                        case "link arrows":
+                            card.LinkMarkers = data.Replace(" , ", "|");
                             break;
-                        case "Passcode":
+                        case "passcode":
                             card.Passcode = data.TrimStart('0');
                             break;
-                        case "Limitation text":
+                        case "limitation text":
                             card.LimitText = data;
                             break;
-                        case "Other names":
+                        case "other names":
                             card.OtherNames = data;
                             break;
-                        case "Password":
-                            card.Password = data;
-                            break;
-                        case "Ritual Monster required":
+                        case "ritual monster required":
                             card.RitualMonsterRequired = data;
                             break;
-                        case "Ritual Spell Card required":
+                        case "ritual spell card required":
                             card.RitualSpellCardRequired = data;
                             break;
-                        case "Source card":
+                        case "source card":
                             card.SourceCard = data;
                             break;
-                        case "Summoned by the effect of":
+                        case "summoned by the effect of":
                             card.SummonedByTheEffectOf = data;
                             break;
-                        case "Synchro Material":
+                        case "synchro material":
                             card.SynchroMaterial = data;
                             break;
-                        case "Statuses":
+                        case "statuses":
+                        case null:
                         case "":
                             break;
                         default:

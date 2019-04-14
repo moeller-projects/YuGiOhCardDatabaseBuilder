@@ -43,18 +43,22 @@ namespace YuGiOhDatabaseBuilderV2
             Task.WaitAll(modules);
 
             await CreateDatabaseAsync(cards);
+
+#if DEBUG
+            Console.ReadKey();
+#endif
         }
 
         private async Task CreateDatabaseAsync(IEnumerable<Card> cards)
         {
-            var sqliteConnection = Path.Combine("C:\\Temp\\temp.db");
+            var sqliteConnection = Path.Combine("C:\\Temp\\temp1.db");
             using (var database = new SQLiteConnection(sqliteConnection))
             {
                 database.CreateTable<Card>();
                 database.InsertAll(cards.Distinct());
             }
 
-            using (var store = new DataStore("C:\\Temp\\temp.json", true, "id"))
+            using (var store = new DataStore("C:\\Temp\\temp1.json", true, "id"))
             {
                 await store.GetCollection<Card>().InsertManyAsync(cards);
             }

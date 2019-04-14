@@ -1,17 +1,15 @@
-﻿using MwParserFromScratch;
-using System;
-using AngleSharp;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using YuGiOhCardDatabaseBuilder.Models;
 using AngleSharp.Html.Parser;
-using System.Text.RegularExpressions;
-using System.Net;
 using AngleSharp.Dom;
 using YuGiOhDatabaseBuilderV2.Parser;
 using YuGiOhDatabaseBuilderV2.Extensions;
 using YuGiOhDatabaseBuilderV2.Reporter;
+using YuGiOhDatabaseBuilderV2.Models;
+using JsonFlatFileDataStore;
 
 namespace YuGiOhDatabaseBuilderV2.Modules
 {
@@ -90,7 +88,7 @@ namespace YuGiOhDatabaseBuilderV2.Modules
 
         protected override async Task<IEnumerable<Card>> ParseCardsAsync(IDictionary<int, string> cardLinks)
         {
-            var cards = new List<Card>();
+            var cards = new CardList();
 
             var cardsToDownload = cardLinks
 #if DEBUG
@@ -106,7 +104,6 @@ namespace YuGiOhDatabaseBuilderV2.Modules
                     {
                         var response = yugiPediaApi.GetCard(cardLink.Key);
                         cards.Add(await ParseCardAsync(response?.Parse?.Pageid, response?.Parse?.Title, response?.Parse?.Text));
-                        //Console.SetCursorPosition(0, Console.CursorTop);
                         Console.WriteLine($"Processed Cards {cards.Count} / {cardLinks.Count}");
                     }
                 }))

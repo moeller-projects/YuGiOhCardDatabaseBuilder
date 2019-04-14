@@ -120,52 +120,50 @@ namespace YuGiOhCardDatabaseBuilder.Models
         [BsonField("image_url")]
         public string ImageUrl { get; set; }
         [BsonField("supports")]
-        public string Supports { get; internal set; }
+        public string Supports { get; set; }
         [BsonField("archetypes_and_series")]
-        public string ArchetypesAndSeries { get; internal set; }
+        public string ArchetypesAndSeries { get; set; }
         [BsonField("supports_archetypes")]
-        public string SupportsArchetypes { get; internal set; }
+        public string SupportsArchetypes { get; set; }
         [BsonField("related_to_archetype_and_series")]
-        public string RelatedToArchetypeAndSeries { get; internal set; }
+        public string RelatedToArchetypeAndSeries { get; set; }
         [BsonField("card_categorie")]
-        public string CardCategories { get; internal set; }
+        public string CardCategories { get; set; }
         [BsonField("summoning_categories")]
-        public string SummoningCategories { get; internal set; }
+        public string SummoningCategories { get; set; }
         [BsonField("miscellaneous")]
-        public string Miscellaneous { get; internal set; }
+        public string Miscellaneous { get; set; }
         [BsonField("counter")]
-        public string Counters { get; internal set; }
+        public string Counters { get; set; }
         [BsonField("actions")]
-        public string Actions { get; internal set; }
+        public string Actions { get; set; }
         [BsonField("banished_categories")]
-        public string BanishedCategories { get; internal set; }
+        public string BanishedCategories { get; set; }
         [BsonField("anti_supports")]
-        public string AntiSupports { get; internal set; }
+        public string AntiSupports { get; set; }
         [BsonField("attack_categories")]
-        public string AttackCategories { get; internal set; }
+        public string AttackCategories { get; set; }
         [BsonField("lp_categories")]
-        public string LpCategories { get; internal set; }
+        public string LpCategories { get; set; }
         [BsonField("stat_changes")]
-        public string StatChanges { get; internal set; }
+        public string StatChanges { get; set; }
         [BsonField("fusion_material_for")]
-        public string FusionMaterialFor { get; internal set; }
+        public string FusionMaterialFor { get; set; }
         [BsonField("anti_supports_archetypes")]
-        public string AntiSupportsArchetypes { get; internal set; }
+        public string AntiSupportsArchetypes { get; set; }
         [BsonField("physical")]
-        public string Physical { get; internal set; }
+        public string Physical { get; set; }
         [BsonField("synchron_material_for")]
-        public string SynchroMaterialFor { get; internal set; }
+        public string SynchroMaterialFor { get; set; }
         [BsonField("other_names")]
-        public string OtherNames { get; internal set; }
-        [BsonField("password")]
-        public string Password { get; internal set; }
+        public string OtherNames { get; set; }
         [BsonField("witual_monster_required")]
-        public string RitualMonsterRequired { get; internal set; }
+        public string RitualMonsterRequired { get; set; }
         [BsonField("ritual_spell_card_requires")]
-        public string RitualSpellCardRequired { get; internal set; }
+        public string RitualSpellCardRequired { get; set; }
         [BsonField("source_card")]
-        public string SourceCard { get; internal set; }
+        public string SourceCard { get; set; }
         [BsonField("sommoned_by_the_effect_of")]
-        public string SummonedByTheEffectOf { get; internal set; }
+        public string SummonedByTheEffectOf { get; set; }
     }
 }
