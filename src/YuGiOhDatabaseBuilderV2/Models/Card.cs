@@ -157,7 +157,7 @@ namespace YuGiOhCardDatabaseBuilder.Models
         public string SynchroMaterialFor { get; set; }
         [BsonField("other_names")]
         public string OtherNames { get; set; }
-        [BsonField("witual_monster_required")]
+        [BsonField("ritual_monster_required")]
         public string RitualMonsterRequired { get; set; }
         [BsonField("ritual_spell_card_requires")]
         public string RitualSpellCardRequired { get; set; }
