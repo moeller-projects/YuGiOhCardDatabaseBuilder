@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using YuGiOhCardDatabaseBuilder.Models;
 
 namespace YuGiOhDatabaseBuilderV2.Models
 {
@@ -45,6 +44,11 @@ namespace YuGiOhDatabaseBuilderV2.Models
         public void RemoveAt(int index) => _cardList.RemoveAt(index);
 
         IEnumerator IEnumerable.GetEnumerator() => _cardList.GetEnumerator();
+
+        public void AddRange(IEnumerable<Card> cards)
+        {
+            foreach (var card in cards) Add(card);
+        }
 
         private int GetLastIndex()
         {

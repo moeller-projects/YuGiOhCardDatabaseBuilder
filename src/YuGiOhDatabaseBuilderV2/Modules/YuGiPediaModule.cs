@@ -2,29 +2,26 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using YuGiOhCardDatabaseBuilder.Models;
 using AngleSharp.Html.Parser;
-using AngleSharp.Dom;
 using YuGiOhDatabaseBuilderV2.Parser;
 using YuGiOhDatabaseBuilderV2.Extensions;
 using YuGiOhDatabaseBuilderV2.Reporter;
 using YuGiOhDatabaseBuilderV2.Models;
-using JsonFlatFileDataStore;
 
 namespace YuGiOhDatabaseBuilderV2.Modules
 {
     [Module]
     public class YuGiPediaModule : ModuleBase
     {
-        private readonly YuGiPediaApi.YuGiPediaApi yugiPediaApi;
-        private readonly MediaWikiParser mediaWikiParser;
-        private readonly MissingFieldReporter missingFieldReporter;
+        private readonly YuGiPediaApi.YuGiPediaApi _yugiPediaApi;
+        private readonly MediaWikiParser _mediaWikiParser;
+        private readonly MissingFieldReporter _missingFieldReporter;
 
         public YuGiPediaModule() : base(nameof(YuGiPediaModule))
         {
-            yugiPediaApi = new YuGiPediaApi.YuGiPediaApi();
-            missingFieldReporter = new MissingFieldReporter();
-            mediaWikiParser = new MediaWikiParser(new HtmlParser(), missingFieldReporter);
+            _yugiPediaApi = new YuGiPediaApi.YuGiPediaApi();
+            _missingFieldReporter = new MissingFieldReporter();
+            _mediaWikiParser = new MediaWikiParser(new HtmlParser(), _missingFieldReporter);
         }
 
         protected override async Task<IDictionary<int, string>> GetCardUrlsAsync()
@@ -43,19 +40,21 @@ namespace YuGiOhDatabaseBuilderV2.Modules
             do
             {
                 processNextPage = false;
-                var response = yugiPediaApi.GetTcgCardList(@continue);
+                var response = _yugiPediaApi.GetTcgCardList(@continue);
 
-                foreach (var card in response?.Query?.Categorymembers)
+                if (response?.Query?.Categorymembers != null && response.Query.Categorymembers.Any())
                 {
-                    if (!cards.ContainsKey(card.Pageid))
-                        cards.Add(card.Pageid, card.Title);
+                    foreach (var card in response?.Query?.Categorymembers)
+                    {
+                        if (!cards.ContainsKey(card.Pageid))
+                            cards.Add(card.Pageid, card.Title);
+                    }
                 }
 
-                if (!string.IsNullOrEmpty(response?.Continue?.Cmcontinue ?? null))
-                {
-                    @continue = response.Continue.Cmcontinue;
-                    processNextPage = true;
-                }
+                if (string.IsNullOrEmpty(response?.Continue?.Cmcontinue)) continue;
+
+                @continue = response.Continue.Cmcontinue;
+                processNextPage = true;
             } while (processNextPage);
 
             return Task.CompletedTask;
@@ -68,19 +67,21 @@ namespace YuGiOhDatabaseBuilderV2.Modules
             do
             {
                 processNextPage = false;
-                var response = yugiPediaApi.GetOcgCardList(@continue);
+                var response = _yugiPediaApi.GetOcgCardList(@continue);
 
-                foreach (var card in response?.Query?.Categorymembers)
+                if (response?.Query?.Categorymembers != null && response.Query.Categorymembers.Any())
                 {
-                    if (!cards.Contains(KeyValuePair.Create(card.Pageid, card.Title)))
-                        cards.Add(card.Pageid, card.Title);
+                    foreach (var card in response?.Query?.Categorymembers)
+                    {
+                        if (!cards.Contains(KeyValuePair.Create(card.Pageid, card.Title)))
+                            cards.Add(card.Pageid, card.Title);
+                    }
                 }
 
-                if (!string.IsNullOrEmpty(response?.Continue?.Cmcontinue ?? null))
-                {
-                    @continue = response.Continue.Cmcontinue;
-                    processNextPage = true;
-                }
+                if (string.IsNullOrEmpty(response?.Continue?.Cmcontinue)) continue;
+
+                @continue = response.Continue.Cmcontinue;
+                processNextPage = true;
             } while (processNextPage);
 
             return Task.CompletedTask;
@@ -88,7 +89,7 @@ namespace YuGiOhDatabaseBuilderV2.Modules
 
         protected override async Task<IEnumerable<Card>> ParseCardsAsync(IDictionary<int, string> cardLinks)
         {
-            var cards = new CardList();
+            var cards = new List<Card>();
 
             var cardsToDownload = cardLinks
 #if DEBUG
@@ -102,7 +103,7 @@ namespace YuGiOhDatabaseBuilderV2.Modules
                 {
                     foreach (var cardLink in s)
                     {
-                        var response = yugiPediaApi.GetCard(cardLink.Key);
+                        var response = _yugiPediaApi.GetCard(cardLink.Key);
                         cards.Add(await ParseCardAsync(response?.Parse?.Pageid, response?.Parse?.Title, response?.Parse?.Text));
                         Console.WriteLine($"Processed Cards {cards.Count} / {cardLinks.Count}");
                     }
@@ -112,14 +113,14 @@ namespace YuGiOhDatabaseBuilderV2.Modules
             Task.WaitAll(tasks);
 
             Console.WriteLine();
-            missingFieldReporter.OnCompleted();
+            _missingFieldReporter.OnCompleted();
 
             return await Task.FromResult(cards);
         }
 
         private async Task<Card> ParseCardAsync(int? pageid, string title, string html)
         {
-            return await mediaWikiParser.ParseAsync(html);
+            return await _mediaWikiParser.ParseAsync(html);
         }
     }
 }

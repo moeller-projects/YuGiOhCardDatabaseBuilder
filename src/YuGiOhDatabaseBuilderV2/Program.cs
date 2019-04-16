@@ -7,11 +7,13 @@ using Microsoft.Extensions.Logging;
 using SQLite;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using YuGiOhCardDatabaseBuilder.Models;
+using CommandLine;
+using YuGiOhDatabaseBuilderV2.Models;
 using YuGiOhDatabaseBuilderV2.Modules;
 
 namespace YuGiOhDatabaseBuilderV2
@@ -20,15 +22,43 @@ namespace YuGiOhDatabaseBuilderV2
     {
         private static void Main(string[] args) => new Program().MainAsync(args).GetAwaiter().GetResult();
 
-        private IConfiguration Configuration;
+        private IConfiguration _configuration;
 
         public async Task MainAsync(string[] args)
         {
-            Configuration = BuildConfig(args);
+            _configuration = BuildConfig(args);
 
             var services = ConfigureServices();
 
-            var cards = new List<Card>();
+            try
+            {
+                CommandLine.Parser.Default.ParseArguments<BuildArguments>(args)
+                    .WithParsed(Build)
+                    .WithNotParsed(Errors);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                Environment.Exit(1);
+            }
+
+#if DEBUG
+            Console.ReadLine();
+#endif
+        }
+
+        private void Errors(IEnumerable<Error> errors)
+        {
+            foreach (var error in errors)
+            {
+                Console.WriteLine(error);
+            }
+            Environment.Exit(1);
+        }
+
+        private void Build(BuildArguments arguments)
+        {
+            var cards = new CardList();
 
             var modules = Assembly.GetEntryAssembly().GetTypes()
                 .Where(type => type.CustomAttributes.Any(attribute => attribute.AttributeType == typeof(ModuleAttribute)))
@@ -42,26 +72,23 @@ namespace YuGiOhDatabaseBuilderV2
 
             Task.WaitAll(modules);
 
-            await CreateDatabaseAsync(cards);
-
-#if DEBUG
-            Console.ReadKey();
-#endif
+            CreateDatabaseAsync(Path.Combine(arguments.DatabasePath, arguments.DatabaseName), cards).ConfigureAwait(true);
         }
 
-        private async Task CreateDatabaseAsync(IEnumerable<Card> cards)
+        private async Task CreateDatabaseAsync(string path, IEnumerable<Card> cards)
         {
-            var sqliteConnection = Path.Combine("C:\\Temp\\temp1.db");
+            var sqliteConnection = path;
+            var allCards = cards as Card[] ?? cards.ToArray();
             using (var database = new SQLiteConnection(sqliteConnection))
             {
                 database.CreateTable<Card>();
-                database.InsertAll(cards.Distinct());
+                database.InsertAll(allCards.Distinct());
             }
 
-            using (var store = new DataStore("C:\\Temp\\temp1.json", true, "id"))
-            {
-                await store.GetCollection<Card>().InsertManyAsync(cards);
-            }
+            //using (var store = new DataStore("C:\\Temp\\temp.json", true, "id"))
+            //{
+            //    await store.GetCollection<Card>().InsertManyAsync(allCards);
+            //}
         }
 
         private IServiceProvider ConfigureServices()
@@ -72,7 +99,7 @@ namespace YuGiOhDatabaseBuilderV2
                 .AddLogging(c => c
                                 .AddConsole())
                 // Extra
-                .AddSingleton(Configuration);
+                .AddSingleton(_configuration);
 
             var container = new ContainerBuilder();
 

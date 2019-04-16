@@ -4,22 +4,21 @@ using System;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
-using YuGiOhCardDatabaseBuilder.Models;
+using YuGiOhDatabaseBuilderV2.Models;
 using YuGiOhDatabaseBuilderV2.Reporter;
 
 namespace YuGiOhDatabaseBuilderV2.Parser
 {
     public class MediaWikiParser : IParser<Card>
     {
-        private readonly IHtmlParser htmlParser;
-        private readonly MissingFieldReporter missingFieldReporter;
+        private readonly IHtmlParser _htmlParser;
+        private readonly MissingFieldReporter _missingFieldReporter;
 
         public MediaWikiParser(IHtmlParser htmlParser, MissingFieldReporter missingFieldReporter)
         {
-            this.htmlParser = htmlParser;
-            this.missingFieldReporter = missingFieldReporter;
+            _htmlParser = htmlParser;
+            _missingFieldReporter = missingFieldReporter;
         }
 
         public async Task<Card> ParseAsync(string html)
@@ -28,27 +27,24 @@ namespace YuGiOhDatabaseBuilderV2.Parser
 
             try
             {
-                var dom = (await htmlParser.ParseDocumentAsync(html))
+                var dom = (await _htmlParser.ParseDocumentAsync(html))
                 .GetElementsByClassName("mw-parser-output")
                 .FirstOrDefault();
 
-                await ParseBasics(dom, ref card);
-                await ParseCardTable(dom, ref card);
-                await ParseHList(dom, ref card);
-                await ParseWikitable(dom, ref card);
+                await ParseBasicsAsync(dom, ref card);
+                await ParseCardTableAsync(dom, ref card);
+                await ParseHListAsync(dom, ref card);
+                await ParseWikitableAsync(dom, ref card);
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
             }
-            finally
-            {
 
-            }
             return card;
         }
 
-        private Task ParseHList(IElement dom, ref Card card)
+        private Task ParseHListAsync(IElement dom, ref Card card)
         {
             var hlists = dom.GetElementsByClassName("hlist")
                 .Where(w => w.GetElementsByTagName("dt").Any() && w.GetElementsByTagName("dd").Any());
@@ -118,7 +114,7 @@ namespace YuGiOhDatabaseBuilderV2.Parser
                     case "":
                         break;
                     default:
-                        missingFieldReporter.OnNext(new Models.MissingField("Hlist", header));
+                        _missingFieldReporter.OnNext(new MissingField("Hlist", header));
                         break;
                 }
             }
@@ -126,7 +122,7 @@ namespace YuGiOhDatabaseBuilderV2.Parser
             return Task.CompletedTask;
         }
 
-        private Task ParseWikitable(IElement dom, ref Card card)
+        private Task ParseWikitableAsync(IElement dom, ref Card card)
         {
             var otherLanguages = dom.GetElementsByTagName("h2")
                 .FirstOrDefault(f => f.TextContent.ToLower().Trim() == "other languages");
@@ -143,7 +139,8 @@ namespace YuGiOhDatabaseBuilderV2.Parser
                 var name = row.GetElementsByTagName("td").FirstOrDefault()?.TextContent.Trim();
                 //var description = row.GetElementsByTagName("td").Skip(1).FirstOrDefault()?.TextContent.Trim();
 
-                var descriptionFormatted = Regex.Replace(row.GetElementsByTagName("td").Skip(1).FirstOrDefault()?.InnerHtml.Replace("<br>", Environment.NewLine) ?? string.Empty, "<[^>]*>", "").Trim();
+                //var descriptionFormatted = Regex.Replace(row.GetElementsByTagName("td").Skip(1).FirstOrDefault()?.InnerHtml.Replace("<br>", Environment.NewLine) ?? string.Empty, "<[^>]*>", "").Trim();
+                var descriptionFormatted = Regex.Replace(string.Join(Environment.NewLine, row.GetElementsByTagName("td").Skip(1).Select(s => s?.InnerHtml.Replace("<br>", Environment.NewLine) ?? string.Empty)), "<[^>]*>", "").Trim();
                 var description = WebUtility.HtmlDecode(descriptionFormatted);
 
                 switch (language?.ToLower())
@@ -172,7 +169,7 @@ namespace YuGiOhDatabaseBuilderV2.Parser
                     case null:
                         break;
                     default:
-                        missingFieldReporter.OnNext(new Models.MissingField("Wikitable", language));
+                        _missingFieldReporter.OnNext(new MissingField("Wikitable", language));
                         break;
                 }
             }
@@ -180,7 +177,7 @@ namespace YuGiOhDatabaseBuilderV2.Parser
             return Task.CompletedTask;
         }
 
-        private Task ParseCardTable(IElement dom, ref Card card)
+        private Task ParseCardTableAsync(IElement dom, ref Card card)
         {
             var cardTable = dom.GetElementsByClassName("cardtable").FirstOrDefault()?.FirstElementChild ?? throw new NullReferenceException("cardTable");
             var tableRows = cardTable.GetElementsByClassName("cardtablerow");
@@ -190,14 +187,20 @@ namespace YuGiOhDatabaseBuilderV2.Parser
 
                 if (row.FirstElementChild.ClassName == "cardtablespanrow")
                 {
-                    if (string.IsNullOrEmpty(card.PendulumScale) && row.FirstElementChild.FirstElementChild.TagName == "P")
-                    {
-                        var descriptionUnformatted = row.FirstElementChild;
-                        var descriptionFormatted = Regex.Replace(descriptionUnformatted.InnerHtml.Replace("<br>", Environment.NewLine), "<[^>]*>", "").Trim();
-                        card.DescriptionEnglish = WebUtility.HtmlDecode(descriptionFormatted);
-                    }
-                    else if (!string.IsNullOrEmpty(card.PendulumScale) && row.TextContent.Contains("effect", StringComparison.InvariantCultureIgnoreCase))
-                        card.DescriptionEnglish = row.TextContent.Replace("\n", " ").Trim();
+                    if (row.FirstElementChild.FirstElementChild.TagName != "P"
+                        && row.TextContent.ToLower().Contains("effect") == false) continue;
+
+                    var descriptionUnformatted = row.FirstElementChild;
+                    var descriptionFormatted = Regex.Replace(descriptionUnformatted.InnerHtml.Replace("<br>", Environment.NewLine), "<[^>]*>", "").Trim();
+                    card.DescriptionEnglish = WebUtility.HtmlDecode(descriptionFormatted);
+                    //if (string.IsNullOrEmpty(card.PendulumScale) && row.FirstElementChild.FirstElementChild.TagName == "P")
+                    //{
+                    //    var descriptionUnformatted = row.FirstElementChild;
+                    //    var descriptionFormatted = Regex.Replace(descriptionUnformatted.InnerHtml.Replace("<br>", Environment.NewLine), "<[^>]*>", "").Trim();
+                    //    card.DescriptionEnglish = WebUtility.HtmlDecode(descriptionFormatted);
+                    //}
+                    //else if (!string.IsNullOrEmpty(card.PendulumScale) && row.TextContent.Contains("effect", StringComparison.InvariantCultureIgnoreCase))
+                    //    card.DescriptionEnglish = row.TextContent.Replace("\n", " ").Trim();
                 }
                 else
                 {
@@ -236,12 +239,12 @@ namespace YuGiOhDatabaseBuilderV2.Parser
                             card.FusionMaterials = data;
                             break;
                         case "atk / def":
-                            var array = data.Split(new string[] { " / " }, StringSplitOptions.RemoveEmptyEntries);
+                            var array = data.Split(new[] { " / " }, StringSplitOptions.RemoveEmptyEntries);
                             card.Attack = array[0];
                             card.Defense = array[1];
                             break;
                         case "atk / link":
-                            array = data.Split(new string[] { " / " }, StringSplitOptions.RemoveEmptyEntries);
+                            array = data.Split(new[] { " / " }, StringSplitOptions.RemoveEmptyEntries);
 
                             if (array.Length == 2)
                             {
@@ -289,7 +292,7 @@ namespace YuGiOhDatabaseBuilderV2.Parser
                         case "":
                             break;
                         default:
-                            missingFieldReporter.OnNext(new Models.MissingField("Cardtable", header));
+                            _missingFieldReporter.OnNext(new MissingField("Cardtable", header));
                             break;
 
                     }
@@ -299,7 +302,7 @@ namespace YuGiOhDatabaseBuilderV2.Parser
             return Task.CompletedTask;
         }
 
-        private Task ParseBasics(IElement dom, ref Card card)
+        private static Task ParseBasicsAsync(IElement dom, ref Card card)
         {
             card.NameEnglish = dom.GetElementsByClassName("cardtable-header").FirstOrDefault()?.TextContent.Trim();
             card.ImageUrl = dom.GetElementsByClassName("cardtable-cardimage").FirstOrDefault()?

@@ -1,6 +1,6 @@
 ﻿using LiteDB;
 
-namespace YuGiOhCardDatabaseBuilder.Models
+namespace YuGiOhDatabaseBuilderV2.Models
 {
     public class Card
     {

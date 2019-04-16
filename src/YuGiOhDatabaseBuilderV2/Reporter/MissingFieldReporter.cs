@@ -7,33 +7,33 @@ namespace YuGiOhDatabaseBuilderV2.Reporter
 {
     public class MissingFieldReporter : IObserver<MissingField>
     {
-        private IDisposable unsubscriber;
-        private IDictionary<string, string> missingFields;
+        private IDisposable _unsubscriber;
+        private readonly IDictionary<string, string> _missingFields;
 
         public MissingFieldReporter()
         {
-            missingFields = new Dictionary<string, string>();
+            _missingFields = new Dictionary<string, string>();
         }
 
         public virtual void Subscribe(IObservable<MissingField> provider)
         {
-            unsubscriber = provider.Subscribe(this);
+            _unsubscriber = provider.Subscribe(this);
         }
 
         public virtual void Unsubscribe()
         {
-            unsubscriber.Dispose();
+            _unsubscriber.Dispose();
         }
 
         public void OnCompleted()
         {
-            foreach (var missingField in missingFields
+            foreach (var missingField in _missingFields
                 .Distinct()
                 .OrderBy(o => o.Key))
             {
                 Console.WriteLine($"MissingField {missingField.Key} at {missingField.Value}");
             }
-            missingFields.Clear();
+            _missingFields.Clear();
         }
 
         public void OnError(Exception error)
@@ -44,8 +44,8 @@ namespace YuGiOhDatabaseBuilderV2.Reporter
         public void OnNext(MissingField value)
         {
             if (string.IsNullOrEmpty(value.Name)) return;
-            if (!missingFields.Contains(KeyValuePair.Create(value.Name, value.Location)) && !missingFields.ContainsKey(value.Name))
-                missingFields.Add(value.Name, value.Location);
+            if (!_missingFields.Contains(KeyValuePair.Create(value.Name, value.Location)) && !_missingFields.ContainsKey(value.Name))
+                _missingFields.Add(value.Name, value.Location);
         }
     }
 }

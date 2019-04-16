@@ -1,7 +1,7 @@
 ﻿using LiteDB;
 using Newtonsoft.Json;
 
-namespace YuGiOhCardDatabaseBuilder.Models
+namespace YuGiOhDatabaseBuilderV2.Models
 {
     public class Skill
     {

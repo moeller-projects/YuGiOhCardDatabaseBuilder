@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using YuGiOhCardDatabaseBuilder.Models;
+using YuGiOhDatabaseBuilderV2.Models;
 
 namespace YuGiOhDatabaseBuilderV2.Modules
 {
@@ -20,7 +19,9 @@ namespace YuGiOhDatabaseBuilderV2.Modules
         public async Task<ModuleInfo> RunAsync()
         {
             var cardUrls = await GetCardUrlsAsync();
-            var cards = await ParseCardsAsync(cardUrls);
+            var cards = await ParseCardsAsync(cardUrls
+                //.Where(w => w.Value == "Flash Knight" || w.Value == "Harmonizing Magician").ToDictionary(key => key.Key, value => value.Value)
+            );
             return new ModuleInfo()
             {
                 Cards = cards

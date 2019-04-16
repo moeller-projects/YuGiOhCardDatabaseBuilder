@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using YuGiOhCardDatabaseBuilder.Models;
+using YuGiOhDatabaseBuilderV2.Models;
 
 namespace YuGiOhDatabaseBuilderV2.Modules
 {
