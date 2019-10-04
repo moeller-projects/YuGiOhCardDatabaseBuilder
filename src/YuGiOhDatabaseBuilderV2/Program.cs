@@ -66,7 +66,7 @@ namespace YuGiOhDatabaseBuilderV2
                 {
                     var module = Activator.CreateInstance(moduleType) as ModuleBase;
                     var moduleInfo = await module.RunAsync();
-                    cards.AddRange(moduleInfo.Cards);
+                    cards.AddRange(moduleInfo.Cards.Where(w => w != null));
                 }))
                 .ToArray();
 

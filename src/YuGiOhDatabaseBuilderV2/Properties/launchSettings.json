@@ -2,7 +2,7 @@
   "profiles": {
     "YuGiOhDatabaseBuilderV2": {
       "commandName": "Project",
-      "commandLineArgs": "-f \"C:\\temp\\\" -n \"ygo.db\""
+      "commandLineArgs": "-f \"C:\\temp\\\\\" -n \"new_ygo.db\""
     }
   }
 }

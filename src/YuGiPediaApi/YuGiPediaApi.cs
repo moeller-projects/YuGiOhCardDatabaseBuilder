@@ -42,5 +42,15 @@ namespace YuGiPediaApi
             }
             return _api.Get<Response>(url);
         }
+
+        public Response GetAllCardsList(string @continue = null)
+        {
+            var url = "api.php?action=query&format=json&list=categorymembers&cmtitle=Category%3AAll_cards&cmlimit=500";
+            if (!string.IsNullOrEmpty(@continue))
+            {
+                url += $"&cmcontinue={Uri.EscapeUriString(@continue)}";
+            }
+            return _api.Get<Response>(url);
+        }
     }
 }

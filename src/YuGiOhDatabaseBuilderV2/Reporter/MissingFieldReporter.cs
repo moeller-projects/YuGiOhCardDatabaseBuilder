@@ -9,6 +9,7 @@ namespace YuGiOhDatabaseBuilderV2.Reporter
     {
         private IDisposable _unsubscriber;
         private readonly IDictionary<string, string> _missingFields;
+        private readonly object accessLock = new object();
 
         public MissingFieldReporter()
         {
@@ -44,8 +45,11 @@ namespace YuGiOhDatabaseBuilderV2.Reporter
         public void OnNext(MissingField value)
         {
             if (string.IsNullOrEmpty(value.Name)) return;
-            if (!_missingFields.Contains(KeyValuePair.Create(value.Name, value.Location)) && !_missingFields.ContainsKey(value.Name))
-                _missingFields.Add(value.Name, value.Location);
+            lock (accessLock)
+            {
+                if (!_missingFields.Contains(KeyValuePair.Create(value.Name, value.Location)) && !_missingFields.ContainsKey(value.Name))
+                    _missingFields.Add(value.Name, value.Location);
+            }
         }
     }
 }

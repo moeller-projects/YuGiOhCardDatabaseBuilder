@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AngleSharp.Html.Parser;
-using YuGiOhDatabaseBuilderV2.Parser;
 using YuGiOhDatabaseBuilderV2.Extensions;
-using YuGiOhDatabaseBuilderV2.Reporter;
 using YuGiOhDatabaseBuilderV2.Models;
+using YuGiOhDatabaseBuilderV2.Parser;
+using YuGiOhDatabaseBuilderV2.Reporter;
 
 namespace YuGiOhDatabaseBuilderV2.Modules
 {
@@ -27,10 +27,38 @@ namespace YuGiOhDatabaseBuilderV2.Modules
         protected override async Task<IDictionary<int, string>> GetCardUrlsAsync()
         {
             var cards = new Dictionary<int, string>();
+            await ProcessAllCardsAsync(ref cards);
             await ProcessTcgCardsAsync(ref cards);
             await ProcessOcgCardsAsync(ref cards);
 
-            return await Task.FromResult(cards);
+            return await Task.FromResult(cards.Where(w => !w.Value.EndsWith(")")).ToDictionary(pair => pair.Key, pair => pair.Value));
+        }
+
+        private Task ProcessAllCardsAsync(ref Dictionary<int, string> cards)
+        {
+            bool processNextPage;
+            string @continue = null;
+            do
+            {
+                processNextPage = false;
+                var response = _yugiPediaApi.GetAllCardsList(@continue);
+
+                if (response?.Query?.Categorymembers != null && response.Query.Categorymembers.Any())
+                {
+                    foreach (var card in response?.Query?.Categorymembers)
+                    {
+                        if (!cards.ContainsKey(card.Pageid))
+                            cards.Add(card.Pageid, card.Title);
+                    }
+                }
+
+                if (string.IsNullOrEmpty(response?.Continue?.Cmcontinue)) continue;
+
+                @continue = response.Continue.Cmcontinue;
+                processNextPage = true;
+            } while (processNextPage);
+
+            return Task.CompletedTask;
         }
 
         private Task ProcessTcgCardsAsync(ref Dictionary<int, string> cards)

@@ -39,6 +39,7 @@ namespace YuGiOhDatabaseBuilderV2.Parser
             catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
+                return null;
             }
 
             return card;
