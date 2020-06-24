@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using YuGiOhDatabaseBuilderV2.Extensions;
 using YuGiOhDatabaseBuilderV2.Models;
 using YuGiOhDatabaseBuilderV2.Reporter;
 
@@ -54,73 +55,80 @@ namespace YuGiOhDatabaseBuilderV2.Parser
             {
                 var header = hlist.GetElementsByTagName("dt").FirstOrDefault()?.TextContent.Replace("\n", " ").Trim();
                 var value = string.Join("|", hlist.GetElementsByTagName("dd").Select(s => s.TextContent.Trim()));
-
-                switch (header?.ToLower())
-                {
-                    case "supports":
-                        card.Supports = value;
-                        break;
-                    case "anti-supports":
-                        card.AntiSupports = value;
-                        break;
-                    case "anti-supports archetypes":
-                        card.AntiSupportsArchetypes = value;
-                        break;
-                    case "archetypes and series":
-                        card.ArchetypesAndSeries = value;
-                        break;
-                    case "supports archetypes":
-                        card.SupportsArchetypes = value;
-                        break;
-                    case "related to archetypes and series":
-                        card.RelatedToArchetypeAndSeries = value;
-                        break;
-                    case "monster/spell/trap categories":
-                        card.CardCategories = value;
-                        break;
-                    case "summoning categories":
-                        card.SummoningCategories = value;
-                        break;
-                    case "miscellaneous":
-                        card.Miscellaneous = value;
-                        break;
-                    case "counters":
-                        card.Counters = value;
-                        break;
-                    case "banished categories":
-                        card.BanishedCategories = value;
-                        break;
-                    case "actions":
-                        card.Actions = value;
-                        break;
-                    case "attack categories":
-                        card.AttackCategories = value;
-                        break;
-                    case "fusion material for":
-                        card.FusionMaterialFor = value;
-                        break;
-                    case "lp":
-                        card.LpCategories = value;
-                        break;
-                    case "stat changes":
-                        card.StatChanges = value;
-                        break;
-                    case "physical":
-                        card.Physical = value;
-                        break;
-                    case "synchro material for":
-                        card.SynchroMaterialFor = value;
-                        break;
-                    case null:
-                    case "":
-                        break;
-                    default:
-                        _missingFieldReporter.OnNext(new MissingField("Hlist", header));
-                        break;
-                }
+                AddInformationToCard(ref card, header, value);
             }
 
             return Task.CompletedTask;
+        }
+
+        private static void AddInformationToCard(ref Card card, string header, string value)
+        {
+            switch (header?.ToLower())
+            {
+                case "card type":
+                    card.CardType = value;
+                    break;
+                case "card effect types":
+                case "effect types":
+                case "effect type":
+                case "effect type(s)":
+                    card.EffectTypes = value;
+                    break;
+                case "attribute":
+                    card.Attribute = value;
+                    break;
+                case "types":
+                case "type":
+                    card.MonsterTypes = string.Join('|', value.Split(" / ", StringSplitOptions.RemoveEmptyEntries));
+                    break;
+                case "level":
+                    card.Level = value;
+                    break;
+                case "rank":
+                    card.Rank = value;
+                    break;
+                case "atk/def":
+                case "atk / def":
+                    var array = value.Split("/", StringSplitOptions.RemoveEmptyEntries);
+                    card.Attack = array[0];
+                    card.Defense = array[1];
+                    break;
+                case "atk / link":
+                    array = value.Split("/", StringSplitOptions.RemoveEmptyEntries);
+
+                    if (array.Length == 2)
+                    {
+
+                        card.Attack = array[0];
+                        card.Link = array[1];
+
+                    }
+                    else
+                        card.Level = array[0];
+
+                    break;
+                case "property":
+                    card.Property = value;
+                    break;
+                case "link arrows":
+                    card.LinkMarkers = value.Replace(" , ", "|");
+                    break;
+                case "passcode":
+                    card.Passcode = value.TrimStart('0');
+                    break;
+                case "archetype":
+                case "archetypes":
+                case "archetype(s)":
+                case "archetypes and series":
+                    card.Archetypes = value;
+                    break;
+                case null:
+                case "":
+                    break;
+                default:
+                    card.AdditionalInformation.Add(header?.Trim().Replace(Environment.NewLine, string.Empty).RemoveSpecialCharacters(), value);
+                    break;
+            }
         }
 
         private Task ParseWikitableAsync(IElement dom, ref Card card)
@@ -170,7 +178,8 @@ namespace YuGiOhDatabaseBuilderV2.Parser
                     case null:
                         break;
                     default:
-                        _missingFieldReporter.OnNext(new MissingField("Wikitable", language));
+                        // card.AdditionalInformation.Add($"{language?.Trim()} Name", name);
+                        // card.AdditionalInformation.Add($"{language?.Trim()} Description", description);
                         break;
                 }
             }
@@ -180,13 +189,13 @@ namespace YuGiOhDatabaseBuilderV2.Parser
 
         private Task ParseCardTableAsync(IElement dom, ref Card card)
         {
-            var cardTable = dom.GetElementsByClassName("cardtable").FirstOrDefault()?.FirstElementChild ?? throw new NullReferenceException("cardTable");
-            var tableRows = cardTable.GetElementsByClassName("cardtablerow");
+            var cardTable = dom.GetElementsByClassName("innertable").FirstOrDefault()?.FirstElementChild ?? throw new NullReferenceException("cardTable");
+            var tableRows = cardTable.GetElementsByTagName("tr");
 
             foreach (var row in tableRows)
             {
 
-                if (row.FirstElementChild.ClassName == "cardtablespanrow")
+                if (row.FirstElementChild?.FirstElementChild?.ClassName == "lore")
                 {
                     if (row.FirstElementChild.FirstElementChild.TagName != "P"
                         && row.TextContent.ToLower().Contains("effect") == false) continue;
@@ -205,97 +214,18 @@ namespace YuGiOhDatabaseBuilderV2.Parser
                 }
                 else
                 {
-                    var header = row.GetElementsByClassName("cardtablerowheader").FirstOrDefault()?.TextContent;
-                    var data = row.GetElementsByClassName("cardtablerowdata").FirstOrDefault()?.TextContent?.Replace("\n", " ").Trim();
+                    var header = row.GetElementsByTagName("th").FirstOrDefault()?.TextContent.Trim('\n');
+                    var value = row.GetElementsByTagName("td").FirstOrDefault()?.TextContent?.Replace("\n", " ").Trim();
 
-                    switch (header?.ToLower())
+                    switch (header?.ToLower().Trim())
                     {
-
-                        case "card type":
-                            card.CardType = data;
-                            break;
-                        case "card effect types":
-                            card.EffectTypes = data;
-                            break;
-                        case "attribute":
-                            card.Attribute = data;
-                            break;
-                        case "types":
-                        case "type":
-                            card.MonsterTypes = string.Join('|', data.Split(" / ", StringSplitOptions.RemoveEmptyEntries));
-                            break;
-                        case "level":
-                            card.Level = data;
-                            break;
-                        case "rank":
-                            card.Rank = data;
-                            break;
-                        case "pendulum scale":
-                            card.PendulumScale = data;
-                            break;
-                        case "materials":
-                            card.Materials = data;
-                            break;
-                        case "fusion material":
-                            card.FusionMaterials = data;
-                            break;
-                        case "atk / def":
-                            var array = data.Split(new[] { " / " }, StringSplitOptions.RemoveEmptyEntries);
-                            card.Attack = array[0];
-                            card.Defense = array[1];
-                            break;
-                        case "atk / link":
-                            array = data.Split(new[] { " / " }, StringSplitOptions.RemoveEmptyEntries);
-
-                            if (array.Length == 2)
-                            {
-
-                                card.Attack = array[0];
-                                card.Link = array[1];
-
-                            }
-                            else
-                                card.Level = array[0];
-
-                            break;
-                        case "property":
-                            card.Property = data;
-                            break;
-                        case "link arrows":
-                            card.LinkMarkers = data.Replace(" , ", "|");
-                            break;
-                        case "passcode":
-                            card.Passcode = data.TrimStart('0');
-                            break;
-                        case "limitation text":
-                            card.LimitText = data;
-                            break;
-                        case "other names":
-                            card.OtherNames = data;
-                            break;
-                        case "ritual monster required":
-                            card.RitualMonsterRequired = data;
-                            break;
-                        case "ritual spell card required":
-                            card.RitualSpellCardRequired = data;
-                            break;
-                        case "source card":
-                            card.SourceCard = data;
-                            break;
-                        case "summoned by the effect of":
-                            card.SummonedByTheEffectOf = data;
-                            break;
-                        case "synchro material":
-                            card.SynchroMaterial = data;
-                            break;
                         case "statuses":
                         case null:
                         case "":
                             break;
                         default:
-                            _missingFieldReporter.OnNext(new MissingField("Cardtable", header));
+                            AddInformationToCard(ref card, header?.Trim(), value);
                             break;
-
                     }
                 }
             }
@@ -305,10 +235,11 @@ namespace YuGiOhDatabaseBuilderV2.Parser
 
         private static Task ParseBasicsAsync(IElement dom, ref Card card)
         {
-            card.NameEnglish = dom.GetElementsByClassName("cardtable-header").FirstOrDefault()?.TextContent.Trim();
-            card.ImageUrl = dom.GetElementsByClassName("cardtable-cardimage").FirstOrDefault()?
-                .GetElementsByTagName("img").First().GetAttribute("srcset")?.Split(' ').First()
-                ?? dom.GetElementsByClassName("cardtable-cardimage").FirstOrDefault()?.GetElementsByTagName("img").First().GetAttribute("src");
+            card.NameEnglish = dom.GetElementsByClassName("heading").FirstOrDefault()
+                ?.TextContent.Trim();
+            card.ImageUrl = dom.GetElementsByClassName("cardtable-main_image-wrapper").FirstOrDefault()
+                                ?.GetElementsByTagName("img").First().GetAttribute("srcset")?.Split(' ').First()
+                ?? dom.GetElementsByClassName("cardtable-main_image-wrapper").FirstOrDefault()?.GetElementsByTagName("img").First().GetAttribute("src");
 
             return Task.CompletedTask;
         }

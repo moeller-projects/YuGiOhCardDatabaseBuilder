@@ -121,7 +121,7 @@ namespace YuGiOhDatabaseBuilderV2.Modules
 
             var cardsToDownload = cardLinks
 #if DEBUG
-                //.Take(100)
+                // .Take(100)
 #endif
                 .Split();
 

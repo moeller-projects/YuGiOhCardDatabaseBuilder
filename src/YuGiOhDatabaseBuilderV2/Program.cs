@@ -13,6 +13,10 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using CommandLine;
+using Firebase.Database;
+using Firebase.Database.Query;
+using Newtonsoft.Json;
+using YuGiOhDatabaseBuilderV2.DataStores;
 using YuGiOhDatabaseBuilderV2.Models;
 using YuGiOhDatabaseBuilderV2.Modules;
 
@@ -53,6 +57,7 @@ namespace YuGiOhDatabaseBuilderV2
             {
                 Console.WriteLine(error);
             }
+
             Environment.Exit(1);
         }
 
@@ -61,7 +66,8 @@ namespace YuGiOhDatabaseBuilderV2
             var cards = new CardList();
 
             var modules = Assembly.GetEntryAssembly().GetTypes()
-                .Where(type => type.CustomAttributes.Any(attribute => attribute.AttributeType == typeof(ModuleAttribute)))
+                .Where(type =>
+                    type.CustomAttributes.Any(attribute => attribute.AttributeType == typeof(ModuleAttribute)))
                 .Select(moduleType => Task.Run(async () =>
                 {
                     var module = Activator.CreateInstance(moduleType) as ModuleBase;
@@ -69,27 +75,48 @@ namespace YuGiOhDatabaseBuilderV2
                     cards.AddRange(moduleInfo.Cards.Where(w => w != null));
                 }))
                 .ToArray();
-
+            
             Task.WaitAll(modules);
 
-            CreateDatabaseAsync(Path.Combine(arguments.DatabasePath, arguments.DatabaseName), cards).ConfigureAwait(true);
+            var dataStores = Assembly.GetEntryAssembly().GetTypes()
+                .Where(type =>
+                    type.CustomAttributes.Any(attribute => attribute.AttributeType == typeof(DataStoreAttribute)))
+                .Select(dataStoreType => Task.Run(async () =>
+                {
+                    var module = Activator.CreateInstance(dataStoreType) as DataStoreBase;
+                    await module.RunAsync(cards);
+                }))
+                .ToArray();
+            
+            Task.WaitAll(dataStores);
         }
 
-        private async Task CreateDatabaseAsync(string path, IEnumerable<Card> cards)
-        {
-            var sqliteConnection = path;
-            var allCards = cards as Card[] ?? cards.ToArray();
-            using (var database = new SQLiteConnection(sqliteConnection))
-            {
-                database.CreateTable<Card>();
-                database.InsertAll(allCards.Distinct());
-            }
-
-            //using (var store = new DataStore("C:\\Temp\\temp.json", true, "id"))
-            //{
-            //    await store.GetCollection<Card>().InsertManyAsync(allCards);
-            //}
-        }
+        // private async Task CreateDatabaseAsync(string path, IEnumerable<Card> cards)
+        // {
+        //     var allCards = cards as Card[] ?? cards.ToArray();
+        //     if (allCards.Any())
+        //     {
+        //         await File.WriteAllTextAsync("C:\\temp\\allCards.json", JsonConvert.SerializeObject(cards));
+        //     }
+        //     else
+        //     {
+        //         allCards = JsonConvert.DeserializeObject<Card[]>(await File.ReadAllTextAsync("C:\\temp\allCards.json"));
+        //     }
+        //     
+        //     await UpdateFirebase(allCards);
+        //
+        //     var sqliteConnection = path;
+        //     using (var database = new SQLiteConnection(sqliteConnection))
+        //     {
+        //         database.CreateTable<Card>();
+        //         database.InsertAll(allCards.Distinct());
+        //     }
+        //
+        //     using (var store = new DataStore("C:\\Temp\\temp.json", true, "id"))
+        //     {
+        //         await store.GetCollection<Card>().InsertManyAsync(allCards);
+        //     }
+        // }
 
         private IServiceProvider ConfigureServices()
         {
@@ -97,7 +124,7 @@ namespace YuGiOhDatabaseBuilderV2
             services
                 // Logging
                 .AddLogging(c => c
-                                .AddConsole())
+                    .AddConsole())
                 // Extra
                 .AddSingleton(_configuration);
 

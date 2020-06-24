@@ -6,6 +6,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using Polly;
+using Polly.Retry;
 
 namespace YuGiOhWikiaApi
 {
@@ -22,6 +24,7 @@ namespace YuGiOhWikiaApi
         {
             return Get<TResponse>(path, null);
         }
+
         public JObject Get(string path)
         {
             return Get(path, null);
@@ -37,6 +40,7 @@ namespace YuGiOhWikiaApi
                 return ParseResponseMessage<TResponse>(responseMessage);
             }
         }
+
         public JObject Get(string path, IDictionary<string, object> urlParameters)
         {
             var pathWithQuery = BuildPathWithQuery(path, urlParameters);
@@ -124,7 +128,8 @@ namespace YuGiOhWikiaApi
                 return path;
             }
 
-            var query = string.Join("&", urlParameters.Select(p => p.Value != null ? $"{p.Key}={p.Value.ToString()}" : p.Key));
+            var query = string.Join("&",
+                urlParameters.Select(p => p.Value != null ? $"{p.Key}={p.Value.ToString()}" : p.Key));
             if (!string.IsNullOrEmpty(query))
             {
                 return path + "?" + query;
@@ -180,9 +185,15 @@ namespace YuGiOhWikiaApi
         {
             using (var client = CreateHttpClient())
             {
-                client.BaseAddress = new Uri(_baseAddress);
-                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                return client.SendAsync(message).Result;
+                return Policy<HttpResponseMessage>
+                    .Handle<HttpRequestException>()
+                    .WaitAndRetryAsync(5, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)))
+                    .ExecuteAsync(async () =>
+                    {
+                        client.BaseAddress = new Uri(_baseAddress);
+                        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                        return await client.SendAsync(message);
+                    }).Result;
             }
         }
     }

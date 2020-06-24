@@ -20,7 +20,7 @@ namespace YuGiOhDatabaseBuilderV2.Modules
         {
             var cardUrls = await GetCardUrlsAsync();
             var cards = await ParseCardsAsync(cardUrls
-                //.Where(w => w.Value == "Flash Knight" || w.Value == "Harmonizing Magician").ToDictionary(key => key.Key, value => value.Value)
+                //.Where(w => w.Value == "Harmonizing Magician").ToDictionary(key => key.Key, value => value.Value)
             );
             return new ModuleInfo()
             {

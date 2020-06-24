@@ -2,7 +2,7 @@
 
 namespace YuGiOhDatabaseBuilderV2.Parser
 {
-    interface IParser<T>
+    public interface IParser<T>
     {
         Task<T> ParseAsync(string html);
     }
